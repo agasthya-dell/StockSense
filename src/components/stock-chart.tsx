@@ -1,0 +1,6 @@
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+export function StockChart({ current, dailyUse, reorderPoint, days = 7 }: { current: number; dailyUse: number; reorderPoint: number; days?: number }) {
+  const data = Array.from({ length: days + 1 }, (_, day) => ({ day: day === 0 ? "Today" : `Day ${day}`, stock: Math.max(0, Math.round(current - dailyUse * day)) }));
+  return <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--border)" /><XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }} /><ReferenceLine y={reorderPoint} stroke="var(--warning)" strokeDasharray="4 4" label={{ value: "Reorder", fill: "var(--warning)", fontSize: 10 }} /><Line type="monotone" dataKey="stock" stroke="var(--primary)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} /></LineChart></ResponsiveContainer></div>;
+}
