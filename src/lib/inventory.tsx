@@ -45,19 +45,139 @@ const initialLedger: LedgerEvent[] = [
   { id: "2", timestamp: "Today, 11:05", reference: "DLV-1840", productId: "steel-rods", operation: "Delivery", from: "Production Floor", to: "Arc Manufacturing", quantity: -10, user: "Agasthya", result: "Completed" },
   { id: "3", timestamp: "Today, 10:14", reference: "TRF-2041", productId: "steel-rods", operation: "Transfer", from: "Main Warehouse", to: "Production Floor", quantity: 20, user: "Agasthya", result: "Completed" },
   { id: "4", timestamp: "Today, 09:41", reference: "RCV-1042", productId: "steel-rods", operation: "Receipt", from: "Apex Metals", to: "Main Warehouse", quantity: 100, user: "Agasthya", result: "Completed" },
+  { id: "5", timestamp: "Yesterday, 14:20", reference: "ADJ-301", productId: "industrial-bearing", operation: "Adjustment", from: "Production Floor", to: "Damaged", quantity: -8, user: "Agasthya", result: "Recorded" },
+  { id: "6", timestamp: "Yesterday, 09:15", reference: "ADJ-300", productId: "industrial-bearing", operation: "Adjustment", from: "Production Floor", to: "Damaged", quantity: -9, user: "Agasthya", result: "Recorded" },
 ];
 
-export const totalStock = (product: Product) => product.locations.reduce((sum, item) => sum + item.quantity, 0);
+// ─── Core helpers ─────────────────────────────────────────────────────────
+export const totalStock = (product: Product) =>
+  product.locations.reduce((sum, item) => sum + item.quantity, 0);
+
 export const statusFor = (product: Product): StockStatus => {
   const total = totalStock(product);
+  if (total <= 0) return "Critical";
   if (total <= product.reorderPoint * 0.65) return "Critical";
   if (total <= product.reorderPoint) return "At Risk";
   if (total >= product.reorderPoint * 3) return "Overstocked";
   if (product.dailyUse < 1) return "Slow Moving";
   return "Healthy";
 };
-export const daysRemaining = (product: Product) => totalStock(product) / Math.max(product.dailyUse, 0.1);
 
+export const daysRemaining = (product: Product) =>
+  totalStock(product) / Math.max(product.dailyUse, 0.1);
+
+// ─── Computed KPI helpers ──────────────────────────────────────────────────
+export type KPIs = {
+  totalStock: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  pendingReceipts: number;
+  pendingDeliveries: number;
+  pendingTransfers: number;
+};
+
+export function computeKPIs(products: Product[], ledger: LedgerEvent[]): KPIs {
+  const recentCutoff = 7; // days to consider "recent" for pending ops
+  const pendingReceipts = ledger.filter((e) => e.operation === "Receipt").length;
+  const pendingDeliveries = ledger.filter((e) => e.operation === "Delivery").length;
+  const pendingTransfers = ledger.filter((e) => e.operation === "Transfer").length;
+
+  return {
+    totalStock: products.reduce((sum, p) => sum + totalStock(p), 0),
+    lowStockCount: products.filter((p) => ["At Risk", "Critical"].includes(statusFor(p))).length,
+    outOfStockCount: products.filter((p) => totalStock(p) <= 0).length,
+    pendingReceipts,
+    pendingDeliveries,
+    pendingTransfers,
+  };
+}
+
+// ─── Anomaly detection ────────────────────────────────────────────────────
+export type AnomalyAlert = {
+  productId: string;
+  productName: string;
+  totalAdjusted: number;
+  eventCount: number;
+  unit: string;
+  description: string;
+};
+
+export function detectAnomalies(products: Product[], ledger: LedgerEvent[]): AnomalyAlert[] {
+  const alerts: AnomalyAlert[] = [];
+  const recentAdjustments = ledger.filter((e) => e.operation === "Adjustment" && e.quantity < 0);
+
+  // Group by product
+  const byProduct = new Map<string, LedgerEvent[]>();
+  for (const e of recentAdjustments) {
+    const arr = byProduct.get(e.productId) ?? [];
+    arr.push(e);
+    byProduct.set(e.productId, arr);
+  }
+
+  for (const [productId, events] of byProduct.entries()) {
+    const product = products.find((p) => p.id === productId);
+    if (!product) continue;
+    const totalOut = Math.abs(events.reduce((s, e) => s + e.quantity, 0));
+    // Flag if more than 2 negative adjustments OR total out > 15% of reorder point
+    if (events.length >= 2 || totalOut > product.reorderPoint * 0.15) {
+      alerts.push({
+        productId,
+        productName: product.name,
+        totalAdjusted: totalOut,
+        eventCount: events.length,
+        unit: product.unit,
+        description: `${totalOut} ${product.unit} adjusted out across ${events.length} event${events.length > 1 ? "s" : ""}.`,
+      });
+    }
+  }
+
+  return alerts;
+}
+
+// ─── Inventory health score ────────────────────────────────────────────────
+export type HealthScore = {
+  overall: number;
+  availability: number;
+  demandCoverage: number;
+  warehouseBalance: number;
+  anomalies: number;
+  deadStock: number;
+  pendingOps: number;
+};
+
+export function computeHealthScore(products: Product[], ledger: LedgerEvent[]): HealthScore {
+  const total = products.length;
+  if (total === 0) return { overall: 0, availability: 0, demandCoverage: 0, warehouseBalance: 0, anomalies: 0, deadStock: 0, pendingOps: 0 };
+
+  const healthy = products.filter((p) => statusFor(p) === "Healthy").length;
+  const availability = Math.round((healthy / total) * 100);
+
+  // Demand coverage: how many products have > 7 days remaining
+  const covered = products.filter((p) => daysRemaining(p) >= 7).length;
+  const demandCoverage = Math.round((covered / total) * 100);
+
+  // Warehouse balance: products spread across ≥2 warehouses
+  const balanced = products.filter((p) => p.locations.filter((l) => l.quantity > 0).length >= 2).length;
+  const warehouseBalance = Math.round((balanced / total) * 100);
+
+  // Anomalies: penalise based on detected anomaly count
+  const anomalyCount = detectAnomalies(products, ledger).length;
+  const anomalies = Math.max(0, 100 - anomalyCount * 15);
+
+  // Dead stock: slow-moving items
+  const deadCount = products.filter((p) => statusFor(p) === "Slow Moving" || statusFor(p) === "Overstocked").length;
+  const deadStock = Math.round(((total - deadCount) / total) * 100);
+
+  // Pending ops: fewer open ops is better (cap at 20)
+  const openOps = ledger.length;
+  const pendingOps = Math.max(50, 100 - Math.min(openOps, 20) * 2);
+
+  const overall = Math.round((availability + demandCoverage + warehouseBalance + anomalies + deadStock + pendingOps) / 6);
+
+  return { overall, availability, demandCoverage, warehouseBalance, anomalies, deadStock, pendingOps };
+}
+
+// ─── Context ─────────────────────────────────────────────────────────────
 type InventoryContextValue = {
   products: Product[];
   ledger: LedgerEvent[];
@@ -65,6 +185,7 @@ type InventoryContextValue = {
   deliver: (productId: string, warehouse: string, quantity: number, customer?: string) => { ok: boolean; available: number };
   transfer: (productId: string, from: string, to: string, quantity: number) => { ok: boolean; available: number };
   adjust: (productId: string, warehouse: string, physical: number, reason: string) => void;
+  addProduct: (product: Omit<Product, "id" | "lastMovement">) => void;
   reset: () => void;
 };
 
@@ -95,42 +216,60 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const mutateLocation = (productId: string, warehouse: string, change: (current: number) => number) => {
     setProducts((items) => items.map((product) => {
       if (product.id !== productId) return product;
-      const exists = product.locations.some((location) => location.warehouse === warehouse);
+      const exists = product.locations.some((l) => l.warehouse === warehouse);
       const locations = exists
-        ? product.locations.map((location) => location.warehouse === warehouse ? { ...location, quantity: change(location.quantity) } : location)
+        ? product.locations.map((l) => l.warehouse === warehouse ? { ...l, quantity: change(l.quantity) } : l)
         : [...product.locations, { warehouse, quantity: change(0) }];
       return { ...product, locations, lastMovement: "Just now" };
     }));
   };
 
-  const addLedger = (event: Omit<LedgerEvent, "id" | "timestamp" | "user" | "result">) => setLedger((items) => [{ ...event, id: crypto.randomUUID(), timestamp: "Just now", user: "Agasthya", result: "Completed" }, ...items]);
+  const addLedger = (event: Omit<LedgerEvent, "id" | "timestamp" | "user" | "result">) =>
+    setLedger((items) => [{
+      ...event,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+      user: "Agasthya",
+      result: "Completed",
+    }, ...items]);
 
   const value = useMemo<InventoryContextValue>(() => ({
     products,
     ledger,
     receive(productId, warehouse, quantity, supplier = "Vendor") {
-      mutateLocation(productId, warehouse, (current) => current + quantity);
+      mutateLocation(productId, warehouse, (c) => c + quantity);
       addLedger({ reference: `RCV-${1043 + ledger.length}`, productId, operation: "Receipt", from: supplier, to: warehouse, quantity });
     },
     deliver(productId, warehouse, quantity, customer = "Customer") {
       const available = products.find((p) => p.id === productId)?.locations.find((l) => l.warehouse === warehouse)?.quantity ?? 0;
       if (quantity > available) return { ok: false, available };
-      mutateLocation(productId, warehouse, (current) => current - quantity);
+      mutateLocation(productId, warehouse, (c) => c - quantity);
       addLedger({ reference: `DLV-${1841 + ledger.length}`, productId, operation: "Delivery", from: warehouse, to: customer, quantity: -quantity });
       return { ok: true, available };
     },
     transfer(productId, from, to, quantity) {
       const available = products.find((p) => p.id === productId)?.locations.find((l) => l.warehouse === from)?.quantity ?? 0;
       if (quantity > available || from === to) return { ok: false, available };
-      mutateLocation(productId, from, (current) => current - quantity);
-      mutateLocation(productId, to, (current) => current + quantity);
+      mutateLocation(productId, from, (c) => c - quantity);
+      mutateLocation(productId, to, (c) => c + quantity);
       addLedger({ reference: `TRF-${2042 + ledger.length}`, productId, operation: "Transfer", from, to, quantity });
       return { ok: true, available };
     },
     adjust(productId, warehouse, physical, reason) {
       const current = products.find((p) => p.id === productId)?.locations.find((l) => l.warehouse === warehouse)?.quantity ?? 0;
       mutateLocation(productId, warehouse, () => physical);
-      addLedger({ reference: `ADJ-${303 + ledger.length}`, productId, operation: "Adjustment", from: warehouse, to: reason, quantity: physical - current });
+      addLedger({
+        reference: `ADJ-${303 + ledger.length}`,
+        productId,
+        operation: "Adjustment",
+        from: warehouse,
+        to: reason,
+        quantity: physical - current,
+      });
+    },
+    addProduct(product) {
+      const id = product.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      setProducts((items) => [...items, { ...product, id, lastMovement: "Just now" }]);
     },
     reset() { setProducts(initialProducts); setLedger(initialLedger); },
   }), [products, ledger]);
