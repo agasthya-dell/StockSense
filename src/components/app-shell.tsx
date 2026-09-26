@@ -348,21 +348,24 @@ function AuthGate({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const isPublic = pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
+
+  const isLanding = pathname === "/";
+  const isLogin   = pathname === "/login";
+  const isCallback = pathname.startsWith("/auth/");
 
   useEffect(() => {
     if (isLoading) return;
-    // Authenticated user hitting login → send to app
-    if (user && pathname === "/login") {
-      navigate({ to: "/app" });
-      return;
-    }
-    // Unauthenticated user hitting protected route → send to login
-    if (!user && !isPublic) {
+    // Protected route, no user → go to login
+    if (!user && !isLanding && !isLogin && !isCallback) {
       navigate({ to: "/login" });
     }
-  }, [user, isLoading, isPublic, pathname, navigate]);
+    // Already logged in, visiting login → go to app
+    if (user && isLogin) {
+      navigate({ to: "/app" });
+    }
+  }, [user, isLoading, isLanding, isLogin, isCallback, navigate]);
 
+  // Show spinner while Supabase resolves the session
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -371,24 +374,36 @@ function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  // If logged in and on login page, show nothing while redirect fires
-  if (user && pathname === "/login") return null;
-  if (isPublic) return <>{children}</>;
-  if (!user) return null;
+  // Landing page — always render
+  if (isLanding) return <>{children}</>;
 
+  // Callback — always render (handles OAuth redirect)
+  if (isCallback) return <>{children}</>;
+
+  // Login page — only render if NOT logged in
+  if (isLogin) {
+    if (user) return null; // redirect in flight
+    return <>{children}</>;
+  }
+
+  // All other (protected) routes — only render if logged in
+  if (!user) return null;
   return <>{children}</>;
 }
 
 // ─── Public AppShell ────────────────────────────────────────────────────────
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isPublic = pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
+  const isLanding  = pathname === "/";
+  const isLogin    = pathname === "/login";
+  const isCallback = pathname.startsWith("/auth/");
+  const isPublicUI = isLanding || isLogin || isCallback;
 
   return (
     <AuthProvider>
       <InventoryProvider>
         <AuthGate>
-          {isPublic ? children : <InnerShell>{children}</InnerShell>}
+          {isPublicUI ? children : <InnerShell>{children}</InnerShell>}
         </AuthGate>
       </InventoryProvider>
     </AuthProvider>

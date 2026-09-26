@@ -1,9 +1,17 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Archive } from "lucide-react";
 import { FadeIn, ScaleUnblur } from "./motion-primitives";
 import { ShaderFlow } from "./shader-flow";
+import { supabase } from "@/lib/supabase";
+
+async function goToLogin(navigate: ReturnType<typeof useNavigate>) {
+  // Sign out any existing session so the login page always shows
+  await supabase.auth.signOut();
+  navigate({ to: "/login" });
+}
 
 export function Hero() {
+  const navigate = useNavigate();
   return (
     <section id="product" className="relative w-full min-h-screen flex items-center overflow-hidden bg-[oklch(0.10_0.03_255)]">
       {/* WebGL backdrop */}
@@ -44,13 +52,14 @@ export function Hero() {
             </p>
 
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <Link
-                to="/login"
+              <button
+                type="button"
+                onClick={() => goToLogin(navigate)}
                 className="group inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[oklch(0.13_0.03_255)] shadow-lg transition-all hover:bg-white/90 hover:shadow-xl hover:-translate-y-0.5"
               >
                 Enter StockSense
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+              </button>
               <button
                 type="button"
                 onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}

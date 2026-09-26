@@ -1,7 +1,8 @@
 import { motion } from "motion/react";
 import { Archive } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useLayoutEffect, useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const NAV_ITEMS = [
   { label: "Product", href: "#product" },
@@ -12,6 +13,12 @@ const NAV_ITEMS = [
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function PillNav() {
+  const navigate = useNavigate();
+
+  const handleEnter = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  };
   const listRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<Array<HTMLLIElement | null>>([]);
   const [pillRect, setPillRect] = useState<{ x: number; width: number } | null>(null);
@@ -82,12 +89,13 @@ export function PillNav() {
         <div className="h-4 w-px bg-white/10" />
 
         {/* CTA */}
-        <Link
-          to="/login"
+        <button
+          type="button"
+          onClick={handleEnter}
           className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-[oklch(0.13_0.03_255)] transition-all hover:bg-white hover:shadow-md mr-1"
         >
           Enter StockSense →
-        </Link>
+        </button>
       </div>
     </nav>
   );

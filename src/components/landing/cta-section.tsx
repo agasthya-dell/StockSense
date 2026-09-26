@@ -1,12 +1,19 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Archive } from "lucide-react";
 import { ShaderFlow } from "./shader-flow";
 import { FadeUp } from "./motion-primitives";
+import { supabase } from "@/lib/supabase";
 
 export function CTASection() {
+  const navigate = useNavigate();
+
+  const handleEnter = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  };
+
   return (
     <section className="relative w-full overflow-hidden bg-[oklch(0.10_0.03_255)] py-32">
-      {/* Background shader */}
       <ShaderFlow
         className="absolute inset-0 h-full w-full opacity-60"
         flowSpeed={[0.06, 0.10]}
@@ -33,17 +40,18 @@ export function CTASection() {
           </h2>
 
           <p className="mx-auto mt-5 max-w-[40ch] text-lg leading-relaxed text-white/45">
-            Sign in with Google or email. Your dashboard is ready in seconds — no setup, no data entry required.
+            Sign in with Google or email. Your dashboard is ready in seconds — no setup required.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              to="/login"
+            <button
+              type="button"
+              onClick={handleEnter}
               className="group inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-[oklch(0.13_0.03_255)] shadow-xl transition-all hover:bg-white/90 hover:shadow-2xl hover:-translate-y-0.5"
             >
               Enter StockSense
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            </button>
           </div>
 
           <p className="mt-6 text-[11px] text-white/20">
