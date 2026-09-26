@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background rounded square, deep navy -->
+  <rect width="32" height="32" rx="7" fill="#1e2a4a"/>
+  <!-- Archive box icon (lucide Archive) scaled to fit -->
+  <!-- Lid -->
+  <path d="M6 11h20v2H6z" fill="#93b4ff" stroke="none"/>
+  <!-- Box body -->
+  <path d="M8 13h16v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V13z" fill="none" stroke="#93b4ff" stroke-width="1.6" stroke-linejoin="round"/>
+  <!-- Dashed line / crease on box -->
+  <path d="M13 13v3h6v-3" fill="none" stroke="#93b4ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Top lid border -->
+  <rect x="5.2" y="9.2" width="21.6" height="3.6" rx="1" fill="none" stroke="#93b4ff" stroke-width="1.6"/>
+</svg>
