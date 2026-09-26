@@ -25,6 +25,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as WarehousesRouteImport } from './routes/warehouses'
 import { Route as WhatIfRouteImport } from './routes/what-if'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
 
@@ -108,6 +109,11 @@ const WhatIfRoute = WhatIfRouteImport.update({
   path: '/what-if',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsIndexRoute = ProductsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof TransfersRoute
   '/warehouses': typeof WarehousesRoute
   '/what-if': typeof WhatIfRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/': typeof ProductsIndexRoute
 }
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof TransfersRoute
   '/warehouses': typeof WarehousesRoute
   '/what-if': typeof WhatIfRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products': typeof ProductsIndexRoute
 }
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/transfers': typeof TransfersRoute
   '/warehouses': typeof WarehousesRoute
   '/what-if': typeof WhatIfRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/': typeof ProductsIndexRoute
 }
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/warehouses'
     | '/what-if'
+    | '/auth/callback'
     | '/products/$productId'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/warehouses'
     | '/what-if'
+    | '/auth/callback'
     | '/products/$productId'
     | '/products'
   id:
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/warehouses'
     | '/what-if'
+    | '/auth/callback'
     | '/products/$productId'
     | '/products/'
   fileRoutesById: FileRoutesById
@@ -258,6 +270,7 @@ export interface RootRouteChildren {
   TransfersRoute: typeof TransfersRoute
   WarehousesRoute: typeof WarehousesRoute
   WhatIfRoute: typeof WhatIfRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WhatIfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products/': {
       id: '/products/'
       path: '/'
@@ -422,6 +442,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransfersRoute: TransfersRoute,
   WarehousesRoute: WarehousesRoute,
   WhatIfRoute: WhatIfRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,5 +1,14 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { Session, User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "./supabase";
 
+// ─── Public user shape ──────────────────────────────────────────────────────
 export type User = {
   id: string;
   name: string;
@@ -7,125 +16,141 @@ export type User = {
   role: string;
   defaultWarehouse: string;
   avatarInitials: string;
-  provider: "email" | "google";
+  provider: string;
 };
 
 type AuthContextValue = {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signUp: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string; needsVerification?: boolean }>;
   signInWithGoogle: () => Promise<{ ok: boolean; error?: string }>;
-  signOut: () => void;
-  updateUser: (updates: Partial<User>) => void;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  updateUser: (updates: Partial<Pick<User, "name" | "defaultWarehouse">>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const AUTH_KEY = "stocksense-auth-v1";
 
-const DEMO_ACCOUNTS: { email: string; password: string; user: User }[] = [
-  {
-    email: "agasthya@stocksense.io",
-    password: "demo1234",
-    user: {
-      id: "usr-001",
-      name: "Agasthya",
-      email: "agasthya@stocksense.io",
-      role: "Inventory Manager",
-      defaultWarehouse: "All warehouses",
-      avatarInitials: "AS",
-      provider: "email",
-    },
-  },
-  {
-    email: "admin@stocksense.io",
-    password: "admin123",
-    user: {
-      id: "usr-002",
-      name: "Admin User",
-      email: "admin@stocksense.io",
-      role: "Administrator",
-      defaultWarehouse: "Main Warehouse",
-      avatarInitials: "AU",
-      provider: "email",
-    },
-  },
-];
-
-function makeInitials(name: string) {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function makeInitials(name: string): string {
   return name
-    .split(" ")
-    .map((w) => w[0])
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0] ?? "")
     .join("")
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "??";
 }
 
+function supabaseUserToUser(supaUser: SupabaseUser): User {
+  const meta = supaUser.user_metadata ?? {};
+  const name: string =
+    meta.full_name ?? meta.name ?? meta.display_name ?? supaUser.email?.split("@")[0] ?? "User";
+  const provider = supaUser.app_metadata?.provider ?? "email";
+  return {
+    id: supaUser.id,
+    name,
+    email: supaUser.email ?? "",
+    role: (meta.role as string) ?? "Inventory Manager",
+    defaultWarehouse: (meta.default_warehouse as string) ?? "All warehouses",
+    avatarInitials: makeInitials(name),
+    provider,
+  };
+}
+
+// ─── Provider ────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem(AUTH_KEY);
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        localStorage.removeItem(AUTH_KEY);
-      }
-    }
-    setIsLoading(false);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setUser(s?.user ? supabaseUserToUser(s.user) : null);
+      setIsLoading(false);
+    });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setUser(s?.user ? supabaseUserToUser(s.user) : null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const persist = (u: User) => {
-    setUser(u);
-    localStorage.setItem(AUTH_KEY, JSON.stringify(u));
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
   };
 
-  const signIn = async (email: string, password: string) => {
-    await new Promise((r) => setTimeout(r, 700));
-    const match = DEMO_ACCOUNTS.find(
-      (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
-    );
-    if (!match) {
-      return { ok: false, error: "Invalid email or password. Try agasthya@stocksense.io / demo1234" };
-    }
-    persist(match.user);
-    return { ok: true };
+  const signUp = async (name: string, email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, role: "Inventory Manager", default_warehouse: "All warehouses" },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    // Supabase sends a confirmation email — user needs to verify
+    return { ok: true, needsVerification: true };
   };
 
   const signInWithGoogle = async () => {
-    await new Promise((r) => setTimeout(r, 900));
-    // Simulate Google OAuth — auto-signs in as the demo user
-    const googleUser: User = {
-      id: "usr-google-001",
-      name: "Agasthya S.",
-      email: "agasthya@gmail.com",
-      role: "Inventory Manager",
-      defaultWarehouse: "All warehouses",
-      avatarInitials: "AS",
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-    };
-    persist(googleUser);
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account", // forces account picker every time
+        },
+      },
+    });
+    if (error) return { ok: false, error: error.message };
+    // Browser will redirect — this resolves only if something went wrong
     return { ok: true };
   };
 
-  const signOut = () => {
-    setUser(null);
-    localStorage.removeItem(AUTH_KEY);
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
-  const updateUser = (updates: Partial<User>) => {
-    if (!user) return;
-    const updated = {
-      ...user,
-      ...updates,
-      avatarInitials: updates.name ? makeInitials(updates.name) : user.avatarInitials,
-    };
-    persist(updated);
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset`,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  };
+
+  const updateUser = async (updates: Partial<Pick<User, "name" | "defaultWarehouse">>) => {
+    const metaUpdates: Record<string, string> = {};
+    if (updates.name) metaUpdates.full_name = updates.name;
+    if (updates.defaultWarehouse) metaUpdates.default_warehouse = updates.defaultWarehouse;
+    await supabase.auth.updateUser({ data: metaUpdates });
+    // Optimistically update local state
+    setUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...updates,
+            avatarInitials: updates.name ? makeInitials(updates.name) : prev.avatarInitials,
+          }
+        : prev
+    );
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signInWithGoogle, signOut, updateUser }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signInWithGoogle, signOut, resetPassword, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

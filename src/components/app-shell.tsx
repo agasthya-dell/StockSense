@@ -72,8 +72,8 @@ function InnerShell({ children }: { children: ReactNode }) {
     else navigate({ to: "/products", search: { q: text } });
   };
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
     navigate({ to: "/login" });
   };
 
@@ -348,23 +348,23 @@ function AuthGate({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const isLogin = pathname === "/login";
+  const isPublic = pathname === "/login" || pathname.startsWith("/auth/");
 
   useEffect(() => {
-    if (!isLoading && !user && !isLogin) {
+    if (!isLoading && !user && !isPublic) {
       navigate({ to: "/login" });
     }
-  }, [user, isLoading, isLogin, navigate]);
+  }, [user, isLoading, isPublic, navigate]);
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-sm text-muted-foreground animate-pulse">Loading…</div>
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
-  if (isLogin) return <>{children}</>;
+  if (isPublic) return <>{children}</>;
   if (!user) return null;
 
   return <>{children}</>;
@@ -373,13 +373,13 @@ function AuthGate({ children }: { children: ReactNode }) {
 // ─── Public AppShell ────────────────────────────────────────────────────────
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isLogin = pathname === "/login";
+  const isPublic = pathname === "/login" || pathname.startsWith("/auth/");
 
   return (
     <AuthProvider>
       <InventoryProvider>
         <AuthGate>
-          {isLogin ? children : <InnerShell>{children}</InnerShell>}
+          {isPublic ? children : <InnerShell>{children}</InnerShell>}
         </AuthGate>
       </InventoryProvider>
     </AuthProvider>
