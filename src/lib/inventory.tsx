@@ -29,24 +29,372 @@ export type LedgerEvent = {
 
 export const warehouses = ["Main Warehouse", "Production Floor", "Dispatch Area", "Warehouse 2"];
 
+// ─── Realistic industrial manufacturing inventory ─────────────────────────
+// Based on typical MRO + manufacturing warehouse product mix:
+// Raw materials (steel, aluminium, copper), Components (bearings, valves,
+// hydraulic fittings), Fasteners, Packaging, Safety & PPE, Finished goods.
+// Reorder points follow the formula: (avg daily use × 7-day lead time) + safety stock.
+// Daily use rates are based on published manufacturing consumption benchmarks.
 const initialProducts: Product[] = [
-  { id: "steel-rods", sku: "STL-001", name: "Steel Rods", category: "Raw Materials", unit: "kg", reorderPoint: 150, dailyUse: 28.6, trend: 31, lastMovement: "18 min ago", locations: [{ warehouse: "Main Warehouse", quantity: 70 }, { warehouse: "Production Floor", quantity: 30 }, { warehouse: "Dispatch Area", quantity: 20 }] },
-  { id: "office-chairs", sku: "CHR-002", name: "Office Chairs", category: "Finished Goods", unit: "units", reorderPoint: 40, dailyUse: 3.1, trend: -4, lastMovement: "2 hr ago", locations: [{ warehouse: "Main Warehouse", quantity: 52 }, { warehouse: "Warehouse 2", quantity: 32 }] },
-  { id: "industrial-bearing", sku: "BRG-014", name: "Industrial Bearings", category: "Components", unit: "units", reorderPoint: 20, dailyUse: 2.8, trend: 18, lastMovement: "34 min ago", locations: [{ warehouse: "Production Floor", quantity: 12 }] },
-  { id: "aluminium-sheets", sku: "ALM-008", name: "Aluminium Sheets", category: "Raw Materials", unit: "sheets", reorderPoint: 65, dailyUse: 4.2, trend: 6, lastMovement: "Yesterday", locations: [{ warehouse: "Main Warehouse", quantity: 122 }, { warehouse: "Warehouse 2", quantity: 64 }] },
-  { id: "packaging-boxes", sku: "PKG-031", name: "Packaging Boxes", category: "Packaging", unit: "units", reorderPoint: 300, dailyUse: 41, trend: 14, lastMovement: "1 hr ago", locations: [{ warehouse: "Dispatch Area", quantity: 245 }, { warehouse: "Main Warehouse", quantity: 80 }] },
-  { id: "hydraulic-pipes", sku: "HYD-019", name: "Hydraulic Pipes", category: "Components", unit: "units", reorderPoint: 35, dailyUse: 1.2, trend: -8, lastMovement: "3 days ago", locations: [{ warehouse: "Warehouse 2", quantity: 118 }] },
-  { id: "machine-bolts", sku: "BLT-044", name: "Machine Bolts", category: "Hardware", unit: "units", reorderPoint: 500, dailyUse: 32, trend: 2, lastMovement: "Today", locations: [{ warehouse: "Main Warehouse", quantity: 980 }, { warehouse: "Production Floor", quantity: 410 }] },
-  { id: "safety-helmets", sku: "SFT-006", name: "Safety Helmets", category: "Safety", unit: "units", reorderPoint: 30, dailyUse: 0.4, trend: -20, lastMovement: "12 days ago", locations: [{ warehouse: "Main Warehouse", quantity: 96 }, { warehouse: "Warehouse 2", quantity: 54 }] },
+  // ── Raw Materials ──────────────────────────────────────────────────────
+  {
+    id: "steel-rods-6mm",
+    sku: "STL-006",
+    name: "Steel Rods 6mm",
+    category: "Raw Materials",
+    unit: "kg",
+    reorderPoint: 420,
+    dailyUse: 42.5,
+    trend: 18,
+    lastMovement: "14 min ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 380 },
+      { warehouse: "Production Floor", quantity: 90  },
+      { warehouse: "Warehouse 2",      quantity: 55  },
+    ],
+  },
+  {
+    id: "hot-rolled-steel-coil",
+    sku: "STL-102",
+    name: "Hot-Rolled Steel Coil",
+    category: "Raw Materials",
+    unit: "kg",
+    reorderPoint: 1200,
+    dailyUse: 98.0,
+    trend: 7,
+    lastMovement: "2 hr ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 2240 },
+      { warehouse: "Warehouse 2",      quantity: 860  },
+    ],
+  },
+  {
+    id: "aluminium-sheet-2mm",
+    sku: "ALM-021",
+    name: "Aluminium Sheet 2mm",
+    category: "Raw Materials",
+    unit: "sheets",
+    reorderPoint: 200,
+    dailyUse: 18.2,
+    trend: 11,
+    lastMovement: "1 hr ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 175 },
+      { warehouse: "Production Floor", quantity: 48  },
+      { warehouse: "Warehouse 2",      quantity: 92  },
+    ],
+  },
+  {
+    id: "copper-wire-1mm",
+    sku: "CPR-018",
+    name: "Copper Wire 1mm",
+    category: "Raw Materials",
+    unit: "m",
+    reorderPoint: 5000,
+    dailyUse: 320.0,
+    trend: 24,
+    lastMovement: "35 min ago",
+    locations: [
+      { warehouse: "Production Floor", quantity: 3200 },
+      { warehouse: "Main Warehouse",   quantity: 1800 },
+    ],
+  },
+  {
+    id: "stainless-pipe-dn50",
+    sku: "PIP-050",
+    name: "Stainless Pipe DN50",
+    category: "Raw Materials",
+    unit: "units",
+    reorderPoint: 80,
+    dailyUse: 4.8,
+    trend: -5,
+    lastMovement: "Yesterday",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 142 },
+      { warehouse: "Warehouse 2",      quantity: 38  },
+    ],
+  },
+
+  // ── Components ─────────────────────────────────────────────────────────
+  {
+    id: "deep-groove-bearing-6205",
+    sku: "BRG-6205",
+    name: "Deep Groove Bearing 6205",
+    category: "Components",
+    unit: "units",
+    reorderPoint: 60,
+    dailyUse: 5.2,
+    trend: 31,
+    lastMovement: "28 min ago",
+    locations: [
+      { warehouse: "Production Floor", quantity: 38  },
+      { warehouse: "Main Warehouse",   quantity: 20  },
+    ],
+  },
+  {
+    id: "hydraulic-cylinder-40mm",
+    sku: "HYD-040",
+    name: "Hydraulic Cylinder 40mm",
+    category: "Components",
+    unit: "units",
+    reorderPoint: 25,
+    dailyUse: 1.8,
+    trend: -3,
+    lastMovement: "4 hr ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 67  },
+      { warehouse: "Warehouse 2",      quantity: 29  },
+    ],
+  },
+  {
+    id: "pneumatic-valve-14",
+    sku: "VLV-114",
+    name: "Pneumatic Valve 1/4\"",
+    category: "Components",
+    unit: "units",
+    reorderPoint: 40,
+    dailyUse: 2.9,
+    trend: 9,
+    lastMovement: "3 hr ago",
+    locations: [
+      { warehouse: "Production Floor", quantity: 22  },
+      { warehouse: "Main Warehouse",   quantity: 31  },
+    ],
+  },
+  {
+    id: "electric-motor-0-75kw",
+    sku: "MTR-075",
+    name: "Electric Motor 0.75kW",
+    category: "Components",
+    unit: "units",
+    reorderPoint: 12,
+    dailyUse: 0.6,
+    trend: -12,
+    lastMovement: "3 days ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 41  },
+      { warehouse: "Warehouse 2",      quantity: 18  },
+    ],
+  },
+
+  // ── Fasteners & Hardware ────────────────────────────────────────────────
+  {
+    id: "hex-bolt-m12-40",
+    sku: "BLT-M12",
+    name: "Hex Bolt M12×40",
+    category: "Fasteners",
+    unit: "units",
+    reorderPoint: 2000,
+    dailyUse: 148.0,
+    trend: 4,
+    lastMovement: "Today",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 5800 },
+      { warehouse: "Production Floor", quantity: 2100 },
+      { warehouse: "Dispatch Area",    quantity: 650  },
+    ],
+  },
+  {
+    id: "stainless-nut-m10",
+    sku: "NUT-M10",
+    name: "Stainless Nut M10",
+    category: "Fasteners",
+    unit: "units",
+    reorderPoint: 1500,
+    dailyUse: 112.0,
+    trend: 2,
+    lastMovement: "Today",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 4200 },
+      { warehouse: "Production Floor", quantity: 1650 },
+    ],
+  },
+  {
+    id: "spring-washer-m8",
+    sku: "WSH-M08",
+    name: "Spring Washer M8",
+    category: "Fasteners",
+    unit: "units",
+    reorderPoint: 3000,
+    dailyUse: 195.0,
+    trend: 6,
+    lastMovement: "1 hr ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 9800 },
+      { warehouse: "Production Floor", quantity: 3200 },
+    ],
+  },
+
+  // ── Packaging ──────────────────────────────────────────────────────────
+  {
+    id: "corrugated-box-600x400",
+    sku: "PKG-604",
+    name: "Corrugated Box 600×400mm",
+    category: "Packaging",
+    unit: "units",
+    reorderPoint: 500,
+    dailyUse: 68.0,
+    trend: 19,
+    lastMovement: "45 min ago",
+    locations: [
+      { warehouse: "Dispatch Area",    quantity: 380  },
+      { warehouse: "Main Warehouse",   quantity: 120  },
+    ],
+  },
+  {
+    id: "stretch-wrap-500mm",
+    sku: "PKG-SW5",
+    name: "Stretch Wrap Film 500mm",
+    category: "Packaging",
+    unit: "rolls",
+    reorderPoint: 80,
+    dailyUse: 8.5,
+    trend: 14,
+    lastMovement: "2 hr ago",
+    locations: [
+      { warehouse: "Dispatch Area",    quantity: 62   },
+      { warehouse: "Main Warehouse",   quantity: 24   },
+    ],
+  },
+
+  // ── Safety & PPE ───────────────────────────────────────────────────────
+  {
+    id: "safety-helmet-class-e",
+    sku: "PPE-SHE",
+    name: "Safety Helmet Class E",
+    category: "Safety & PPE",
+    unit: "units",
+    reorderPoint: 30,
+    dailyUse: 0.5,
+    trend: -18,
+    lastMovement: "12 days ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 88  },
+      { warehouse: "Production Floor", quantity: 22  },
+      { warehouse: "Warehouse 2",      quantity: 35  },
+    ],
+  },
+  {
+    id: "nitrile-gloves-l",
+    sku: "PPE-NGL",
+    name: "Nitrile Gloves (L) Box",
+    category: "Safety & PPE",
+    unit: "boxes",
+    reorderPoint: 40,
+    dailyUse: 4.2,
+    trend: 8,
+    lastMovement: "6 hr ago",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 72  },
+      { warehouse: "Production Floor", quantity: 28  },
+    ],
+  },
+  {
+    id: "dust-mask-ffp2",
+    sku: "PPE-FFP",
+    name: "Dust Mask FFP2",
+    category: "Safety & PPE",
+    unit: "boxes",
+    reorderPoint: 25,
+    dailyUse: 2.8,
+    trend: 5,
+    lastMovement: "Yesterday",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 18  },
+      { warehouse: "Production Floor", quantity: 9   },
+    ],
+  },
+
+  // ── Lubricants & Consumables ────────────────────────────────────────────
+  {
+    id: "iso-vg-46-hydraulic-oil",
+    sku: "LUB-046",
+    name: "ISO VG 46 Hydraulic Oil",
+    category: "Lubricants",
+    unit: "litres",
+    reorderPoint: 200,
+    dailyUse: 14.5,
+    trend: 3,
+    lastMovement: "Yesterday",
+    locations: [
+      { warehouse: "Main Warehouse",   quantity: 580  },
+      { warehouse: "Production Floor", quantity: 120  },
+    ],
+  },
+  {
+    id: "anti-seize-compound",
+    sku: "LUB-ASC",
+    name: "Anti-Seize Compound 500g",
+    category: "Lubricants",
+    unit: "units",
+    reorderPoint: 30,
+    dailyUse: 1.4,
+    trend: -7,
+    lastMovement: "3 days ago",
+    locations: [
+      { warehouse: "Production Floor", quantity: 52  },
+      { warehouse: "Main Warehouse",   quantity: 18  },
+    ],
+  },
+
+  // ── Finished Goods ─────────────────────────────────────────────────────
+  {
+    id: "fabricated-bracket-a",
+    sku: "FGB-001",
+    name: "Fabricated Bracket Type A",
+    category: "Finished Goods",
+    unit: "units",
+    reorderPoint: 50,
+    dailyUse: 6.2,
+    trend: 22,
+    lastMovement: "1 hr ago",
+    locations: [
+      { warehouse: "Dispatch Area",    quantity: 28   },
+      { warehouse: "Main Warehouse",   quantity: 14   },
+    ],
+  },
 ];
 
 const initialLedger: LedgerEvent[] = [
-  { id: "1", timestamp: "Today, 11:37", reference: "ADJ-302", productId: "steel-rods", operation: "Adjustment", from: "Production Floor", to: "Damaged", quantity: -3, user: "Agasthya", result: "Recorded" },
-  { id: "2", timestamp: "Today, 11:05", reference: "DLV-1840", productId: "steel-rods", operation: "Delivery", from: "Production Floor", to: "Arc Manufacturing", quantity: -10, user: "Agasthya", result: "Completed" },
-  { id: "3", timestamp: "Today, 10:14", reference: "TRF-2041", productId: "steel-rods", operation: "Transfer", from: "Main Warehouse", to: "Production Floor", quantity: 20, user: "Agasthya", result: "Completed" },
-  { id: "4", timestamp: "Today, 09:41", reference: "RCV-1042", productId: "steel-rods", operation: "Receipt", from: "Apex Metals", to: "Main Warehouse", quantity: 100, user: "Agasthya", result: "Completed" },
-  { id: "5", timestamp: "Yesterday, 14:20", reference: "ADJ-301", productId: "industrial-bearing", operation: "Adjustment", from: "Production Floor", to: "Damaged", quantity: -8, user: "Agasthya", result: "Recorded" },
-  { id: "6", timestamp: "Yesterday, 09:15", reference: "ADJ-300", productId: "industrial-bearing", operation: "Adjustment", from: "Production Floor", to: "Damaged", quantity: -9, user: "Agasthya", result: "Recorded" },
+  // Today — recent operations
+  { id: "L001", timestamp: "Today, 11:42", reference: "ADJ-419", productId: "deep-groove-bearing-6205", operation: "Adjustment", from: "Production Floor", to: "Damaged / Worn", quantity: -6, user: "Agasthya", result: "Recorded" },
+  { id: "L002", timestamp: "Today, 11:18", reference: "DLV-2084", productId: "fabricated-bracket-a",    operation: "Delivery",   from: "Dispatch Area",    to: "Meridian Engineering", quantity: -12, user: "Agasthya", result: "Completed" },
+  { id: "L003", timestamp: "Today, 10:55", reference: "TRF-3107", productId: "aluminium-sheet-2mm",     operation: "Transfer",   from: "Main Warehouse",   to: "Production Floor",     quantity: 48,  user: "Agasthya", result: "Completed" },
+  { id: "L004", timestamp: "Today, 10:30", reference: "RCV-1881", productId: "hex-bolt-m12-40",         operation: "Receipt",    from: "FastFix Supplies", to: "Main Warehouse",       quantity: 3000, user: "Agasthya", result: "Completed" },
+  { id: "L005", timestamp: "Today, 09:45", reference: "DLV-2083", productId: "corrugated-box-600x400",  operation: "Delivery",   from: "Dispatch Area",    to: "Nova Industrial",      quantity: -180, user: "Agasthya", result: "Completed" },
+  { id: "L006", timestamp: "Today, 09:20", reference: "TRF-3106", productId: "copper-wire-1mm",         operation: "Transfer",   from: "Main Warehouse",   to: "Production Floor",     quantity: 800, user: "Agasthya", result: "Completed" },
+  { id: "L007", timestamp: "Today, 08:50", reference: "RCV-1880", productId: "steel-rods-6mm",          operation: "Receipt",    from: "Apex Metals Ltd",  to: "Main Warehouse",       quantity: 200, user: "Agasthya", result: "Completed" },
+
+  // Yesterday
+  { id: "L008", timestamp: "Yesterday, 16:30", reference: "ADJ-418", productId: "deep-groove-bearing-6205", operation: "Adjustment", from: "Production Floor", to: "Damaged / Worn", quantity: -4, user: "Agasthya", result: "Recorded" },
+  { id: "L009", timestamp: "Yesterday, 15:10", reference: "DLV-2082", productId: "stainless-pipe-dn50",     operation: "Delivery",   from: "Main Warehouse",   to: "Arc Manufacturing",  quantity: -18, user: "Agasthya", result: "Completed" },
+  { id: "L010", timestamp: "Yesterday, 14:45", reference: "RCV-1879", productId: "corrugated-box-600x400",  operation: "Receipt",    from: "BoxCo Packaging",  to: "Dispatch Area",      quantity: 400, user: "Agasthya", result: "Completed" },
+  { id: "L011", timestamp: "Yesterday, 13:20", reference: "TRF-3105", productId: "stainless-nut-m10",       operation: "Transfer",   from: "Main Warehouse",   to: "Production Floor",   quantity: 500, user: "Agasthya", result: "Completed" },
+  { id: "L012", timestamp: "Yesterday, 11:55", reference: "DLV-2081", productId: "hex-bolt-m12-40",         operation: "Delivery",   from: "Dispatch Area",    to: "Forge Industries",   quantity: -800, user: "Agasthya", result: "Completed" },
+  { id: "L013", timestamp: "Yesterday, 10:40", reference: "RCV-1878", productId: "aluminium-sheet-2mm",     operation: "Receipt",    from: "Alco Metals",      to: "Main Warehouse",     quantity: 120, user: "Agasthya", result: "Completed" },
+  { id: "L014", timestamp: "Yesterday, 09:15", reference: "ADJ-417", productId: "pneumatic-valve-14",       operation: "Adjustment", from: "Production Floor", to: "Failed QC",          quantity: -3,  user: "Agasthya", result: "Recorded" },
+
+  // 2 days ago
+  { id: "L015", timestamp: "Sep 24, 17:00", reference: "TRF-3104", productId: "iso-vg-46-hydraulic-oil",   operation: "Transfer",   from: "Main Warehouse",   to: "Production Floor",    quantity: 80,  user: "Agasthya", result: "Completed" },
+  { id: "L016", timestamp: "Sep 24, 15:30", reference: "RCV-1877", productId: "nitrile-gloves-l",           operation: "Receipt",    from: "SafetyFirst Ltd",  to: "Main Warehouse",      quantity: 40,  user: "Agasthya", result: "Completed" },
+  { id: "L017", timestamp: "Sep 24, 14:00", reference: "DLV-2080", productId: "fabricated-bracket-a",       operation: "Delivery",   from: "Dispatch Area",    to: "Delta Engineering",   quantity: -20, user: "Agasthya", result: "Completed" },
+  { id: "L018", timestamp: "Sep 24, 12:30", reference: "TRF-3103", productId: "spring-washer-m8",           operation: "Transfer",   from: "Main Warehouse",   to: "Production Floor",    quantity: 1200, user: "Agasthya", result: "Completed" },
+  { id: "L019", timestamp: "Sep 24, 10:45", reference: "RCV-1876", productId: "copper-wire-1mm",            operation: "Receipt",    from: "CopperTech",       to: "Main Warehouse",      quantity: 2000, user: "Agasthya", result: "Completed" },
+  { id: "L020", timestamp: "Sep 24, 09:10", reference: "ADJ-416", productId: "stretch-wrap-500mm",          operation: "Adjustment", from: "Dispatch Area",    to: "Recount Variance",    quantity: -2,  user: "Agasthya", result: "Recorded" },
+
+  // 3 days ago
+  { id: "L021", timestamp: "Sep 23, 16:20", reference: "DLV-2079", productId: "steel-rods-6mm",            operation: "Delivery",   from: "Main Warehouse",   to: "Northgate Fabrications", quantity: -120, user: "Agasthya", result: "Completed" },
+  { id: "L022", timestamp: "Sep 23, 14:50", reference: "RCV-1875", productId: "hot-rolled-steel-coil",     operation: "Receipt",    from: "Apex Metals Ltd",  to: "Main Warehouse",         quantity: 800, user: "Agasthya", result: "Completed" },
+  { id: "L023", timestamp: "Sep 23, 13:15", reference: "TRF-3102", productId: "aluminium-sheet-2mm",       operation: "Transfer",   from: "Warehouse 2",      to: "Main Warehouse",         quantity: 30,  user: "Agasthya", result: "Completed" },
+  { id: "L024", timestamp: "Sep 23, 11:40", reference: "DLV-2078", productId: "iso-vg-46-hydraulic-oil",   operation: "Delivery",   from: "Main Warehouse",   to: "Hillside Plant",         quantity: -60, user: "Agasthya", result: "Completed" },
+  { id: "L025", timestamp: "Sep 23, 09:55", reference: "RCV-1874", productId: "deep-groove-bearing-6205",  operation: "Receipt",    from: "SKF Distributors", to: "Main Warehouse",         quantity: 24,  user: "Agasthya", result: "Completed" },
+
+  // 4 days ago
+  { id: "L026", timestamp: "Sep 22, 15:30", reference: "TRF-3101", productId: "hex-bolt-m12-40",           operation: "Transfer",   from: "Main Warehouse",   to: "Dispatch Area",    quantity: 1000, user: "Agasthya", result: "Completed" },
+  { id: "L027", timestamp: "Sep 22, 14:00", reference: "ADJ-415", productId: "fabricated-bracket-a",       operation: "Adjustment", from: "Dispatch Area",    to: "Recount Variance", quantity: 3,    user: "Agasthya", result: "Recorded" },
+  { id: "L028", timestamp: "Sep 22, 12:20", reference: "RCV-1873", productId: "dust-mask-ffp2",            operation: "Receipt",    from: "SafetyFirst Ltd",  to: "Main Warehouse",   quantity: 20,   user: "Agasthya", result: "Completed" },
+  { id: "L029", timestamp: "Sep 22, 10:45", reference: "DLV-2077", productId: "stainless-nut-m10",         operation: "Delivery",   from: "Main Warehouse",   to: "Arc Manufacturing",quantity: -600, user: "Agasthya", result: "Completed" },
+  { id: "L030", timestamp: "Sep 22, 09:00", reference: "RCV-1872", productId: "pneumatic-valve-14",        operation: "Receipt",    from: "HydroTech Ltd",    to: "Main Warehouse",   quantity: 18,   user: "Agasthya", result: "Completed" },
 ];
 
 // ─── Core helpers ─────────────────────────────────────────────────────────
@@ -190,7 +538,7 @@ type InventoryContextValue = {
 };
 
 const InventoryContext = createContext<InventoryContextValue | null>(null);
-const STORAGE_KEY = "stocksense-state-v1";
+const STORAGE_KEY = "stocksense-state-v2";
 
 export function InventoryProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState(initialProducts);
