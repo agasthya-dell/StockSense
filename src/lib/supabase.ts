@@ -8,6 +8,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
+    detectSessionInUrl: true,   // picks up tokens from URL hash automatically
+    flowType: "implicit",       // matches what Supabase returns for Google OAuth
   },
 });
