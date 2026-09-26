@@ -351,10 +351,17 @@ function AuthGate({ children }: { children: ReactNode }) {
   const isPublic = pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
 
   useEffect(() => {
-    if (!isLoading && !user && !isPublic) {
+    if (isLoading) return;
+    // Authenticated user hitting login → send to app
+    if (user && pathname === "/login") {
+      navigate({ to: "/app" });
+      return;
+    }
+    // Unauthenticated user hitting protected route → send to login
+    if (!user && !isPublic) {
       navigate({ to: "/login" });
     }
-  }, [user, isLoading, isPublic, navigate]);
+  }, [user, isLoading, isPublic, pathname, navigate]);
 
   if (isLoading) {
     return (
@@ -364,6 +371,8 @@ function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
+  // If logged in and on login page, show nothing while redirect fires
+  if (user && pathname === "/login") return null;
   if (isPublic) return <>{children}</>;
   if (!user) return null;
 
