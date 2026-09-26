@@ -4,6 +4,7 @@ import { Archive, ArrowRight, Boxes, Check, Loader2, MapPin, PackageCheck } from
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import GhostFibers from "@/components/ghost-fibers";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -103,19 +104,44 @@ function Page() {
       {/* ── Left editorial panel ── */}
       <div
         className={cn(
-          "relative hidden overflow-hidden lg:flex lg:flex-col bg-[oklch(0.175_0.032_255)]",
+          "relative hidden overflow-hidden lg:flex lg:flex-col",
           "transition-opacity duration-700",
           mounted ? "opacity-100" : "opacity-0"
         )}
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse at 20% 50%, oklch(0.4 0.1 248 / 0.15), transparent 60%), radial-gradient(ellipse at 80% 10%, oklch(0.35 0.12 270 / 0.12), transparent 50%)",
-          }}
-        />
-        <div className="relative z-10 flex flex-col h-full p-12">
+        {/* GhostFibers WebGL background — fills entire left panel */}
+        <div className="absolute inset-0 z-0">
+          <GhostFibers
+            lineColor="#140E35"
+            glowColor="#3437A0"
+            speed={0.2}
+            scale={2}
+            rotation={0}
+            rotationSpeed={0.25}
+            layers={4}
+            waveAmplitude={0.015}
+            waveFrequency={3}
+            waveSpeed={0.15}
+            layerSpeed={0.08}
+            twist={0.1}
+            twistFrequency={5}
+            twistSpeed={1.2}
+            lineFrequency={5}
+            lineSpacing={2}
+            lineSharpness={16}
+            glowFalloff={10}
+            glowIntensity={1.6}
+            brightness={2}
+            blueBoost={1.25}
+            vignette={0.8}
+            grain={0.05}
+            dpr={1}
+          />
+        </div>
+
+        {/* Dark overlay so text stays readable over the fibers */}
+        <div className="absolute inset-0 z-10 bg-[oklch(0.10_0.03_255/0.72)]" />
+        <div className="relative z-20 flex flex-col h-full p-12">
           <div className="flex items-center gap-3">
             <div className="grid size-9 place-items-center rounded-md bg-white/10 text-white">
               <Archive className="size-5" />
