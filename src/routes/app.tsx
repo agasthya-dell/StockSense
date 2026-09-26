@@ -88,6 +88,7 @@ function Overview() {
   const { products, ledger } = useInventory();
   const navigate = useNavigate();
   const [period, setPeriod] = useState("30d");
+  const [chartDays, setChartDays] = useState<7 | 14 | 30>(7);
   const steel = products.find((p) => p.id === "steel-rods") ?? products[0];
   const risk = products.filter((p) => ["At Risk", "Critical"].includes(statusFor(p)));
   const kpis = computeKPIs(products, ledger);
@@ -213,14 +214,26 @@ function Overview() {
           description={`${steel.name} · projected from current daily usage`}
           action={
             <div className="flex rounded-md border p-0.5 text-xs overflow-hidden">
-              <span className="rounded-sm bg-primary px-2.5 py-1 text-primary-foreground font-medium">7 days</span>
-              <span className="px-2.5 py-1 text-muted-foreground">14 days</span>
-              <span className="px-2.5 py-1 text-muted-foreground">30 days</span>
+              {([7, 14, 30] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setChartDays(d)}
+                  className={cn(
+                    "rounded-sm px-2.5 py-1 font-medium transition-colors",
+                    chartDays === d
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {d} days
+                </button>
+              ))}
             </div>
           }
         >
           <div className="p-4">
-            <StockChart current={totalStock(steel)} dailyUse={steel.dailyUse} reorderPoint={steel.reorderPoint} />
+            <StockChart current={totalStock(steel)} dailyUse={steel.dailyUse} reorderPoint={steel.reorderPoint} days={chartDays} />
           </div>
         </Section>
 

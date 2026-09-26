@@ -36,6 +36,7 @@ function ProductPage() {
   const { productId } = Route.useParams();
   const { products, ledger } = useInventory();
   const [dismissed, setDismissed] = useState(false);
+  const [chartDays, setChartDays] = useState<7 | 14 | 30>(7);
 
   const p = products.find((x) => x.id === productId);
   if (!p) return (
@@ -171,7 +172,27 @@ function ProductPage() {
               ))}
             </div>
             <div className="p-4">
-              <StockChart current={total} dailyUse={p.dailyUse} reorderPoint={p.reorderPoint} />
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-muted-foreground">Stock trajectory</span>
+                <div className="flex rounded-md border p-0.5 text-xs overflow-hidden">
+                  {([7, 14, 30] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setChartDays(d)}
+                      className={cn(
+                        "rounded-sm px-2.5 py-1 font-medium transition-colors",
+                        chartDays === d
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <StockChart current={total} dailyUse={p.dailyUse} reorderPoint={p.reorderPoint} days={chartDays} />
             </div>
           </Section>
 
