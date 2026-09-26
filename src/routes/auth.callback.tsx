@@ -35,7 +35,7 @@ function AuthCallback() {
       // PKCE flow — exchange code for session
       supabase.auth.exchangeCodeForSession(window.location.href).then(({ error: err }) => {
         if (err) { setError(err.message); return; }
-        navigate({ to: "/" });
+        navigate({ to: "/app" });
       });
     } else {
       // Implicit flow — tokens are in the hash, Supabase picks them up automatically
@@ -43,7 +43,7 @@ function AuthCallback() {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
           subscription.unsubscribe();
-          navigate({ to: "/" });
+          navigate({ to: "/app" });
         }
         if (event === "SIGNED_OUT") {
           subscription.unsubscribe();
@@ -56,7 +56,7 @@ function AuthCallback() {
         subscription.unsubscribe();
         // Check if we already have a session
         supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) navigate({ to: "/" });
+          if (session) navigate({ to: "/app" });
           else setError("Sign-in timed out. Please try again.");
         });
       }, 5000);

@@ -21,7 +21,7 @@ export function useWarehouseFilter() { return useContext(WarehouseContext); }
 
 // ─── Nav groups ────────────────────────────────────────────────────────────
 const groups = [
-  { label: "", items: [{ label: "Overview", to: "/", icon: Gauge }] },
+  { label: "", items: [{ label: "Overview", to: "/app", icon: Gauge }] },
   { label: "Inventory", items: [{ label: "Products", to: "/products", icon: Boxes }, { label: "Stock by Location", to: "/locations", icon: Warehouse }, { label: "Low Stock", to: "/low-stock", icon: TriangleAlert }] },
   { label: "Operations", items: [{ label: "Receipts", to: "/receipts", icon: PackageCheck }, { label: "Deliveries", to: "/deliveries", icon: Truck }, { label: "Transfers", to: "/transfers", icon: ArrowLeftRight }, { label: "Adjustments", to: "/adjustments", icon: SlidersHorizontal }, { label: "Stock Ledger", to: "/ledger", icon: History }] },
   { label: "Intelligence", items: [{ label: "StockSense Intelligence", to: "/intelligence", icon: Sparkles }, { label: "Risk Monitor", to: "/risk-monitor", icon: BrainCircuit }, { label: "What-if Simulator", to: "/what-if", icon: ClipboardCheck }] },
@@ -348,7 +348,7 @@ function AuthGate({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const isPublic = pathname === "/login" || pathname.startsWith("/auth/");
+  const isPublic = pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
 
   useEffect(() => {
     if (!isLoading && !user && !isPublic) {
@@ -373,7 +373,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 // ─── Public AppShell ────────────────────────────────────────────────────────
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isPublic = pathname === "/login" || pathname.startsWith("/auth/");
+  const isPublic = pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
 
   return (
     <AuthProvider>

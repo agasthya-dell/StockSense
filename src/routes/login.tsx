@@ -37,7 +37,7 @@ function Page() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (user) navigate({ to: "/" }); }, [user, navigate]);
+  useEffect(() => { if (user) navigate({ to: "/app" }); }, [user, navigate]);
 
   const clearMessages = () => { setError(null); setInfo(null); };
 
@@ -75,7 +75,7 @@ function Page() {
     const result = await signIn(email, password);
     setLoading(false);
     if (!result.ok) { setError(result.error ?? "Sign in failed."); return; }
-    navigate({ to: "/" });
+    navigate({ to: "/app" });
   };
 
   const handleGoogle = async () => {

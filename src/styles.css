@@ -284,3 +284,42 @@ nav::-webkit-scrollbar {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Landing page — site frame ─── */
+.site-frame {
+  display: block;
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background-color: oklch(0.10 0.03 255);
+}
+.site-frame--top   { top:0; left:0; right:0; height:10px; }
+.site-frame--left  { top:0; left:0; bottom:0; width:10px; }
+.site-frame--right { top:0; right:0; bottom:0; width:10px; }
+
+.site-corner {
+  display: block;
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  color: oklch(0.10 0.03 255);
+}
+.site-corner--top-left  { transform: rotate(90deg);  top:10px; left:10px; }
+.site-corner--top-right { transform: rotate(180deg); top:10px; right:10px; }
+
+@media (max-width: 850px) {
+  .site-frame, .site-corner { display: none; }
+}
+
+/* ─── Landing project card hover ─── */
+.project-card {
+  transform: translateY(0);
+  transition: transform 400ms cubic-bezier(0.22,1,0.36,1),
+              box-shadow 400ms cubic-bezier(0.22,1,0.36,1),
+              border-color 400ms cubic-bezier(0.22,1,0.36,1);
+  will-change: transform;
+}
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -8px oklch(0 0 0 / 0.5), 0 4px 8px -4px oklch(0 0 0 / 0.35);
+}

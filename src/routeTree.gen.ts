@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdjustmentsRouteImport } from './routes/adjustments'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as DeliveriesRouteImport } from './routes/deliveries'
 import { Route as IntelligenceRouteImport } from './routes/intelligence'
 import { Route as LedgerRouteImport } from './routes/ledger'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdjustmentsRoute = AdjustmentsRouteImport.update({
   id: '/adjustments',
   path: '/adjustments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeliveriesRoute = DeliveriesRouteImport.update({
@@ -128,6 +134,7 @@ const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/adjustments': typeof AdjustmentsRoute
+  '/app': typeof AppRoute
   '/deliveries': typeof DeliveriesRoute
   '/intelligence': typeof IntelligenceRoute
   '/ledger': typeof LedgerRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/adjustments': typeof AdjustmentsRoute
+  '/app': typeof AppRoute
   '/deliveries': typeof DeliveriesRoute
   '/intelligence': typeof IntelligenceRoute
   '/ledger': typeof LedgerRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/adjustments': typeof AdjustmentsRoute
+  '/app': typeof AppRoute
   '/deliveries': typeof DeliveriesRoute
   '/intelligence': typeof IntelligenceRoute
   '/ledger': typeof LedgerRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/adjustments'
+    | '/app'
     | '/deliveries'
     | '/intelligence'
     | '/ledger'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/adjustments'
+    | '/app'
     | '/deliveries'
     | '/intelligence'
     | '/ledger'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/adjustments'
+    | '/app'
     | '/deliveries'
     | '/intelligence'
     | '/ledger'
@@ -256,6 +268,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdjustmentsRoute: typeof AdjustmentsRoute
+  AppRoute: typeof AppRoute
   DeliveriesRoute: typeof DeliveriesRoute
   IntelligenceRoute: typeof IntelligenceRoute
   LedgerRoute: typeof LedgerRoute
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/adjustments'
       fullPath: '/adjustments'
       preLoaderRoute: typeof AdjustmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deliveries': {
@@ -428,6 +448,7 @@ const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdjustmentsRoute: AdjustmentsRoute,
+  AppRoute: AppRoute,
   DeliveriesRoute: DeliveriesRoute,
   IntelligenceRoute: IntelligenceRoute,
   LedgerRoute: LedgerRoute,
