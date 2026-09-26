@@ -1,0 +1,5 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader, ProductTable, Section } from "@/components/page-kit";
+import { statusFor, useInventory } from "@/lib/inventory";
+export const Route = createFileRoute("/low-stock")({ head: () => ({ meta: [{ title: "Low Stock — StockSense" }, { name: "description", content: "Products requiring replenishment or redistribution." }, { property: "og:title", content: "Low Stock — StockSense" }, { property: "og:description", content: "Products requiring replenishment or redistribution." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+function Page(){ const {products}=useInventory(); return <><PageHeader eyebrow="Inventory" title="Low Stock" description="Products below or approaching their configured reorder point."/><Section><ProductTable products={products.filter(p=>["At Risk","Critical"].includes(statusFor(p)))} /></Section></> }

@@ -1,0 +1,5 @@
+import { createFileRoute, Outlet } from "@tanstack/react-router";
+
+type Search = { q?: string; status?: string };
+export const Route = createFileRoute("/products")({ validateSearch: (search: Record<string, unknown>): Search => ({ ...(typeof search["q"] === "string" ? { q: search["q"] } : {}), ...(typeof search["status"] === "string" ? { status: search["status"] } : {}) }), head: () => ({ meta: [{ title: "Products — StockSense" }, { name: "description", content: "Search and manage products across all warehouse locations." }, { property: "og:title", content: "Products — StockSense" }, { property: "og:description", content: "Search and manage products across all warehouse locations." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ProductsPage });
+function ProductsPage() { return <Outlet />; }
